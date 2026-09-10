@@ -1,0 +1,15 @@
+export const AUTH_POLICY = {
+  passwordMin: 12,
+  passwordMax: 128,
+  argonMemoryKiB: 65536,
+  argonIterations: 3,
+  argonParallelism: 1,
+  accessSeconds: 600,
+  sessionSeconds: 30 * 24 * 60 * 60,
+  verificationSeconds: 600,
+  resendSeconds: 60,
+  verificationAttempts: 5,
+  rateWindowMs: 60_000,
+  rateAttempts: 20,
+  rateMaxKeys: 10_000,
+} as const;

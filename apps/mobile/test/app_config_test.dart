@@ -36,4 +36,28 @@ void main() {
       throwsStateError,
     );
   });
+  test('non-local auth transport requires HTTPS', () {
+    for (final environment in ['dev', 'staging', 'production']) {
+      expect(
+        () => AppConfig.fromEnvironment(
+          envName: environment,
+          apiBaseUrl: 'http://example.com/api/v1',
+        ),
+        throwsStateError,
+      );
+    }
+  });
+  test('rejects credential-bearing and malformed API URLs', () {
+    for (final url in [
+      'https://user:secret@example.com',
+      '/api/v1',
+      'https://example.com?secret=value',
+      'https://example.com#fragment',
+    ]) {
+      expect(
+        () => AppConfig.fromEnvironment(apiBaseUrl: url),
+        throwsStateError,
+      );
+    }
+  });
 }

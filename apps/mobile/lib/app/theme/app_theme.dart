@@ -1,5 +1,6 @@
 import 'package:codecore_mobile/app/theme/app_colors.dart';
 import 'package:codecore_mobile/app/theme/app_radii.dart';
+import 'package:codecore_mobile/app/theme/app_spacing.dart';
 import 'package:codecore_mobile/app/theme/app_typography.dart';
 import 'package:flutter/material.dart';
 
@@ -50,7 +51,11 @@ abstract final class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size(48, 56),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
           backgroundColor: colors.accent,
           foregroundColor: brightness == Brightness.dark
               ? const Color(0xFF04221C)
@@ -59,6 +64,9 @@ abstract final class AppTheme {
             borderRadius: BorderRadius.circular(AppRadii.md),
           ),
         ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
       ),
       extensions: [colors],
     );

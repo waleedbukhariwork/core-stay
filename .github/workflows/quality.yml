@@ -7,6 +7,20 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: codecore
+          POSTGRES_PASSWORD: codecore_ci_only
+          POSTGRES_DB: codecore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U codecore -d codecore"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://codecore:codecore_ci_only@localhost:5432/codecore
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -22,10 +36,20 @@ jobs:
         run: pnpm --filter @codecore/api format:check
       - name: Lint
         run: pnpm --filter @codecore/api lint
+      - name: Architecture boundaries
+        run: pnpm --filter @codecore/api architecture:check
       - name: Typecheck
         run: pnpm --filter @codecore/api typecheck
       - name: Test
         run: pnpm --filter @codecore/api test
+      - name: Migration validation
+        run: pnpm --filter @codecore/api db:check
+      - name: Migration drift
+        run: |
+          pnpm --filter @codecore/api db:generate
+          test -z "$(git status --porcelain apps/api/drizzle)"
+      - name: PostgreSQL integration
+        run: pnpm --filter @codecore/api test:integration
       - name: Build
         run: pnpm --filter @codecore/api build
 
@@ -36,6 +60,10 @@ jobs:
         working-directory: apps/mobile
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -45,3 +73,4 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze
       - run: flutter test
+      - run: flutter build apk --debug

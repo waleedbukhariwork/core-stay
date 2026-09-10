@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 abstract final class AppTypography {
   static TextTheme textTheme(Color primary, Color secondary) {
     return TextTheme(
+      headlineLarge: TextStyle(
+        fontSize: 38,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -1.2,
+        height: 1.12,
+        color: primary,
+      ),
       headlineMedium: TextStyle(
         fontSize: 28,
         fontWeight: FontWeight.w600,

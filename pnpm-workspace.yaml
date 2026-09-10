@@ -2,4 +2,8 @@ packages:
   - apps/api
 
 allowBuilds:
+  argon2: true
   esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@aws-sdk/client-sesv2@3.1128.0'

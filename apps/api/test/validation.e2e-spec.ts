@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   HttpModule,
   applyHttpGlobals,
-} from '../src/common/http/http.module.js';
+} from '../src/platform/http/http.module.js';
 
 class ProbeDto {
   @IsString()

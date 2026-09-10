@@ -22,10 +22,19 @@ class AppConfig {
     }
 
     if (apiBaseUrl.isNotEmpty) {
-      return AppConfig(
-        environment: environment,
-        apiBaseUrl: Uri.parse(apiBaseUrl),
-      );
+      final uri = Uri.parse(apiBaseUrl);
+      if (!uri.hasAuthority ||
+          uri.userInfo.isNotEmpty ||
+          uri.hasQuery ||
+          uri.hasFragment ||
+          !{'http', 'https'}.contains(uri.scheme) ||
+          (environment != AppEnvironment.local && uri.scheme != 'https')) {
+        throw StateError(
+          'API_BASE_URL must be an HTTP(S) origin and path; '
+          'HTTPS is required outside local development.',
+        );
+      }
+      return AppConfig(environment: environment, apiBaseUrl: uri);
     }
 
     if (environment == AppEnvironment.local) {

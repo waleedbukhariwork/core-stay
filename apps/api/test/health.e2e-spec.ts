@@ -3,8 +3,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppModule } from '../src/app.module.js';
-import { DatabaseHealth } from '../src/common/database/database-health.js';
-import { applyHttpGlobals } from '../src/common/http/http.module.js';
+import { DatabaseHealth } from '../src/modules/health/infrastructure/persistence/database-health.js';
+import { applyHttpGlobals } from '../src/platform/http/http.module.js';
 
 describe('Health (e2e)', () => {
   let app: INestApplication;
@@ -38,7 +38,7 @@ describe('Health (e2e)', () => {
 
   it('GET /api/v1/health returns problem details when the database is down', async () => {
     const { AppException } =
-      await import('../src/common/errors/app-exception.js');
+      await import('../src/platform/http/errors/app-exception.js');
     ping.mockRejectedValue(
       new AppException({
         status: 503,

@@ -45,7 +45,7 @@ class AppColors extends ThemeExtension<AppColors> {
     surfaceElevated: Color(0xFFFFFFFF),
     textPrimary: Color(0xFF12181F),
     textSecondary: Color(0xFF5C6B7A),
-    accent: Color(0xFF0F8F7A),
+    accent: Color(0xFF087F6D),
     success: Color(0xFF1B8A5A),
     warning: Color(0xFFB07D10),
     error: Color(0xFFC62828),

@@ -8,4 +8,4 @@ The product loop is:
 
 AI is underlying intelligence inside that loop. It is not the product positioning.
 
-Phase 0 is infrastructure only. No learning, practice, billing, or identity features ship in this slice.
+Phase 2 adds account creation, email verification, sign-in and session management after the product introduction. The authenticated flow ends at a Profile Setup Boundary; engineering preferences, learning, practice and billing remain out of scope.

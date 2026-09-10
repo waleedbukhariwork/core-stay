@@ -13,6 +13,7 @@ class CodeCoreApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: 'CodeCore',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
