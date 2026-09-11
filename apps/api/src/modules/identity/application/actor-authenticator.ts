@@ -1,3 +1,5 @@
+import { IdentityUnitOfWork } from './ports/identity-unit-of-work.js';
+import { isActiveVerified } from '../domain/account-policy.js';
 import { Injectable } from '@nestjs/common';
 import {
   IdentityApi,
@@ -13,6 +15,7 @@ export class ActorAuthenticator extends IdentityApi {
   constructor(
     private readonly tokens: SessionTokens,
     private readonly clock: Clock,
+    private readonly repository: IdentityUnitOfWork,
   ) {
     super();
   }
@@ -25,6 +28,23 @@ export class ActorAuthenticator extends IdentityApi {
     });
     this.actors.set(actor, claims.expiresAt);
     return actor;
+  }
+  async assertActiveVerified(actor: AuthenticatedActor): Promise<void> {
+    this.assertAuthenticated(actor);
+    await this.repository.transaction(async (tx) => {
+      const user = await tx.accounts.findByIdForUpdate(actor.userId);
+      const session = await tx.sessions.findForUpdate(actor.sessionId);
+      this.assertAuthenticated(actor);
+      if (
+        !isActiveVerified(user) ||
+        !session ||
+        session.userId !== actor.userId ||
+        session.revokedAt
+      )
+        throw identityFailure('SESSION_REVOKED');
+      if (session.expiresAt <= this.clock.now())
+        throw identityFailure('SESSION_EXPIRED');
+    });
   }
   assertAuthenticated(actor: AuthenticatedActor): void {
     const expiresAt = this.actors.get(actor);

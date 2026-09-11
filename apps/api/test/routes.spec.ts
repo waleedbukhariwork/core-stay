@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 
 describe('Registered HTTP contract', () => {
-  it('registers exactly the nine existing routes once', async () => {
+  it('registers each supported route exactly once', async () => {
     const app = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -31,6 +31,9 @@ describe('Registered HTTP contract', () => {
       expect(routes.sort()).toEqual([
         'GET /api/v1/auth/me',
         'GET /api/v1/health',
+        'GET /api/v1/profile',
+        'GET /api/v1/profile/catalog',
+        'PATCH /api/v1/profile',
         'POST /api/v1/auth/email-verification/resend',
         'POST /api/v1/auth/email-verification/verify',
         'POST /api/v1/auth/login',

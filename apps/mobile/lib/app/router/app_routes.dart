@@ -7,6 +7,7 @@ enum AppRoute {
   login('/auth/login'),
   verify('/auth/verify'),
   profile('/profile-setup'),
+  diagnostic('/diagnostic-intro'),
   recovery('/session-recovery'),
   health('/health');
 

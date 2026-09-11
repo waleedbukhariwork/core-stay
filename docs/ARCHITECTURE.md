@@ -6,7 +6,8 @@ CodeCore is a deployment-independent modular monolith: one NestJS API and one Fl
 
 | Capability | Owns | Exposes |
 | --- | --- | --- |
-| `identity` | Accounts, password credentials, email verification, authentication and sessions; all five existing tables and their writes | `IdentityApi`: authenticate access credentials and assert actor provenance/expiry; existing `/auth/*` HTTP contracts |
+| `identity` | Accounts, password credentials, email verification, authentication and sessions; all five existing tables and their writes | `IdentityApi`: authenticate access credentials, assert actor provenance/expiry, and validate an active verified account/live session; existing `/auth/*` HTTP contracts |
+| `profile` | Engineering preferences, selectable catalog, setup completion and resume state; `engineering_profiles` and its writes | Authenticated `/profile` read/update and `/profile/catalog` HTTP contracts |
 | `health` | Connectivity probe and its HTTP response | Existing `/health` endpoint; no business API |
 | `platform` | Validated configuration, PostgreSQL pool/Drizzle composition, logging, HTTP validation and Problem Details | Technical facilities, no business policy |
 
@@ -29,6 +30,12 @@ apps/api/src/
       infrastructure/
         persistence/                    # schemas, Drizzle repositories and transaction implementation
         crypto/, email/, config/        # configured adapters; actual system clock
+    profile/
+      profile.module.ts                 # composes Identity through its public API
+      transport/http/                   # guard, class-validator DTOs, explicit mapping
+      application/                      # profile operations and focused repository port
+      domain/                           # authoritative catalog, validation and progress
+      infrastructure/persistence/       # atomic partial upsert and profile schema
     health/
       health.module.ts
       application/                      # probe contract and use case
@@ -77,10 +84,20 @@ Feature-first layout with Riverpod 3, repository/service boundaries, and MVVM-st
 - `lib/core` — config, errors, network, shared widgets
 - `lib/features/<name>` — data, presentation, and feature types together
 
-Widgets depend on repositories/notifiers, not Dio. Network providers disable Riverpod's default automatic retry; the UI owns retry. The backend architecture migration does not change Flutter code or its live auth integrations.
+Widgets depend on repositories/notifiers, not Dio. Network providers disable Riverpod's default automatic retry; the UI owns retry. Phase 3 adds `features/profile` using the same repository/service and Riverpod notifier conventions. The server supplies every option ID and display label; Flutter defines only the seven transport fields and their presentation. Authenticated routing loads persisted preferences before choosing the first incomplete step or Diagnostic Intro. Profile state is isolated by authenticated account and stale responses are discarded. In-memory drafts survive recoverable failures; only acknowledged steps advance, and confirmed logout clears that account’s in-memory state.
 
 ## Environments and persistence
 
 Both API and mobile support `local`, `dev`, `staging`, and `production`. Configuration is loaded and validated at a single boundary. Feature adapters read typed config, never scattered raw environment maps. Database URL, JWT keys/issuer/audience, HMAC secret, email mode/sender/region and local inbox remain runtime configuration. JWTs, verification codes, refresh tokens, time and persisted state remain dynamically generated/read through the actual adapters. Values compiled into Flutter are public. Local Android emulator traffic uses `10.0.2.2` to reach the host API.
 
 PostgreSQL + Drizzle ORM (`0.45.x`) + `pg`. Production uses reviewed `db:migrate`, never schema push. Drizzle Kit reads the platform schema catalog; its migration output remains `apps/api/drizzle`. Integration tests apply the migration to unique disposable databases, never reset the application database. Deployment/start commands and environment names are unchanged.
+
+## Engineering profile consistency (Phase 3)
+
+`profile` depends only on Identity's public contract. Its application operations call `IdentityApi.assertActiveVerified` before accessing preferences with the actor's user ID; no ownership ID is accepted from HTTP input. Identity checks provenance, expiry, active/verified account and live owned session under its established user → session locks. The check completes before the profile statement; a request already authorized may finish while logout races it. Later requests reject the revoked session. Profile never imports Identity repositories or schemas.
+
+One nullable row per user stores the seven independent step values. A single SQL upsert replaces only supplied fields atomically, including concurrent first saves. Independent fields do not overwrite one another; concurrent writes to the same field use last committed replacement. Retries are semantically idempotent, although the internal update timestamp advances. No multi-table transaction coordinator is needed. Completion and next step are calculated from valid saved values, never stored page numbers or onboarding booleans.
+
+The profile domain owns a frozen code catalog with stable IDs, labels, category, explicit array ordering, enabled state, recommendation metadata and exclusive groups. Technology additions or label changes require no user-record migration. Keep retired definitions disabled instead of deleting IDs while records refer to them; disabled selections make that step incomplete and can be replaced in Flutter. Stable role/experience/time checks also exist in PostgreSQL. DTO validation and domain validation reject duplicates, unknown IDs, empty values and competing primary learning approaches.
+
+Migration `0001_hot_roxanne_simpson.sql` creates only `engineering_profiles`. Its user primary key prevents duplicate profiles; checks enforce nonempty arrays without null members, role/experience/time values and learning-approach compatibility. The cross-capability foreign key to `users(id)` with cascading deletion is declared explicitly in SQL, so Drizzle schema imports remain private and acyclic. Drizzle snapshots track the table and checks; this migration-owned foreign key must be preserved in future SQL reviews (generation alone does not inspect it). Use reviewed migrations, never schema push. Existing-data migration adds an empty table and does not rewrite Identity data.

@@ -85,3 +85,29 @@ ResponseBody jsonResponse(Object body, [int status = 200]) =>
         Headers.contentTypeHeader: [Headers.jsonContentType],
       },
     );
+
+Map<String, dynamic> profileCatalogData() {
+  const choices = {
+    'goals': ('stay_current', 'Stay current in my field'),
+    'role': ('backend', 'Backend'),
+    'experience': ('years_1_3', '1–3 years'),
+    'technologies': ('typescript', 'TypeScript'),
+    'focusAreas': ('debugging', 'Debugging'),
+    'dailyMinutes': (10, '10 minutes'),
+    'learningPreferences': ('challenge_first', 'Challenge me first'),
+  };
+  return {
+    for (final entry in choices.entries)
+      entry.key: [
+        {
+          'id': entry.value.$1,
+          'label': entry.value.$2,
+          'enabled': true,
+          'order': 0,
+          'category': null,
+          'exclusiveGroup': null,
+          'recommended': entry.key == 'dailyMinutes',
+        },
+      ],
+  };
+}

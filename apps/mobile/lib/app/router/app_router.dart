@@ -2,7 +2,7 @@ import 'package:codecore_mobile/app/router/app_routes.dart';
 import 'package:codecore_mobile/features/auth/domain/auth_state.dart';
 import 'package:codecore_mobile/features/auth/presentation/auth_controller.dart';
 import 'package:codecore_mobile/features/auth/presentation/credentials_screen.dart';
-import 'package:codecore_mobile/features/auth/presentation/profile_boundary_screen.dart';
+import 'package:codecore_mobile/features/auth/presentation/session_recovery_screen.dart';
 import 'package:codecore_mobile/features/auth/presentation/verify_email_screen.dart';
 import 'package:codecore_mobile/features/entry/application/entry_controller.dart';
 import 'package:codecore_mobile/features/entry/presentation/account_entry_screen.dart';
@@ -10,6 +10,9 @@ import 'package:codecore_mobile/features/entry/presentation/product_intro_screen
 import 'package:codecore_mobile/features/entry/presentation/splash_screen.dart';
 import 'package:codecore_mobile/features/entry/presentation/welcome_screen.dart';
 import 'package:codecore_mobile/features/health/presentation/health_screen.dart';
+import 'package:codecore_mobile/features/profile/presentation/diagnostic_intro_screen.dart';
+import 'package:codecore_mobile/features/profile/presentation/profile_controller.dart';
+import 'package:codecore_mobile/features/profile/presentation/profile_setup_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +28,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref
     ..listen(_startupProvider, (_, _) => refresh.value++)
-    ..listen(authControllerProvider, (_, _) => refresh.value++);
+    ..listen(authControllerProvider, (_, _) => refresh.value++)
+    ..listen(profileControllerProvider, (_, _) => refresh.value++);
   final router = GoRouter(
     initialLocation: AppRoute.splash.path,
     refreshListenable: refresh,
@@ -39,7 +43,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       final path = state.uri.path;
       final requiredRoute = switch (auth.phase) {
-        AuthPhase.authenticated => AppRoute.profile,
+        AuthPhase.authenticated =>
+          ref.read(profileControllerProvider).diagnostic
+              ? AppRoute.diagnostic
+              : AppRoute.profile,
         AuthPhase.awaitingEmailVerification => AppRoute.verify,
         AuthPhase.recoverableNetworkFailure => AppRoute.recovery,
         _ => null,
@@ -49,6 +56,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if ({
         AppRoute.profile.path,
+        AppRoute.diagnostic.path,
         AppRoute.verify.path,
         AppRoute.recovery.path,
       }.contains(path)) {
@@ -80,7 +88,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.profile.path,
         name: AppRoute.profile.name,
-        builder: (context, state) => const ProfileBoundaryScreen(),
+        builder: (context, state) => const ProfileSetupScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.diagnostic.path,
+        name: AppRoute.diagnostic.name,
+        builder: (context, state) => const DiagnosticIntroScreen(),
       ),
       GoRoute(
         path: AppRoute.recovery.path,

@@ -1,3 +1,4 @@
+import { engineeringProfiles } from '../../modules/profile/infrastructure/persistence/profile.schema.js';
 import {
   users,
   userStatus,
@@ -9,6 +10,7 @@ import {
   refreshTokens,
 } from '../../modules/identity/infrastructure/persistence/auth.schema.js';
 export {
+  engineeringProfiles,
   users,
   userStatus,
   passwordCredentials,
@@ -17,6 +19,7 @@ export {
   refreshTokens,
 };
 export const schema = {
+  engineeringProfiles,
   users,
   passwordCredentials,
   verificationChallenges,

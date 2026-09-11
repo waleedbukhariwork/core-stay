@@ -44,7 +44,7 @@
 
 Design choices: pending registration resumes only for the same password; `/auth/me` checks live session state; strict refresh reuse has no grace window; synchronous bounded email delivery avoids introducing a queue/outbox. See `SECURITY.md` and ADR 0006 for the lost-response/email-commit limitations.
 
-Manual emulator/device/visual QA and iOS runtime checks remain pending separately, not completion blockers. Live SES delivery and deployment TLS/edge-rate-limit configuration have not been exercised. Ready for Phase 3 development; Phase 3 has not started.
+Manual emulator/device/visual QA and iOS runtime checks remain pending separately, not completion blockers. Live SES delivery and deployment TLS/edge-rate-limit configuration have not been exercised. This was the Phase 2 verification checkpoint; the completed Phase 3 work is recorded below.
 
 ## Backend architecture migration — complete
 
@@ -73,8 +73,34 @@ Scope was backend architecture and durable documentation after Phase 2. Earlier 
 
 HTTP tests initially hit sandbox `listen EPERM`; rerunning with local-server access passed. PostgreSQL tests used authorized local connectivity and removed only their own disposable database. No local application migration was applied by this architecture migration.
 
-Verification limits: Flutter was untouched and its preceding Phase 2 checks were not rerun for this backend-only task. Hosted CI, live SES, deployment/TLS/load testing and manual emulator/device/iOS QA remain unexecuted here. The existing Vite tsconfig-paths deprecation notice is informational; no toolchain dependency was changed. Synchronous email inside transactions and PostgreSQL-specific atomicity/locking remain documented limitations, not automatic ORM/service replaceability. Phase 3 has not started.
+Verification limits: Flutter was untouched and its preceding Phase 2 checks were not rerun for this backend-only task. Hosted CI, live SES, deployment/TLS/load testing and manual emulator/device/iOS QA remain unexecuted here. The existing Vite tsconfig-paths deprecation notice is informational; no toolchain dependency was changed. Synchronous email inside transactions and PostgreSQL-specific atomicity/locking remain documented limitations, not automatic ORM/service replaceability. Phase 3 implementation is recorded below.
+
+## Phase 3 implemented — automated verification complete
+
+- Authenticated Goals → Role → Experience → searchable/grouped Tech Stack → Focus Areas → Daily Time → compatible Learning Preferences → Diagnostic Intro. The existing Flutter feature/repository/service/Riverpod and backend capability/layer boundaries are retained.
+- One backend catalog supplies stable IDs, labels, ordering, enabled state, categories, recommendation and exclusivity metadata, including 31 technologies. Ten minutes is visually recommended without preselection; no inferred seniority or automatic focus recommendations. At least one learning preference is required; a primary approach is optional, and its two alternatives cannot coexist.
+- `GET /api/v1/profile/catalog`, `GET /api/v1/profile`, `PATCH /api/v1/profile`. All require active verified Identity/session authorization in the application as well as HTTP authentication. Ownership comes solely from the authenticated actor; DTO/domain validation rejects unknown, duplicate, empty, conflicting or unsupported values.
+- `engineering_profiles` stores one partial profile per user with stable values and internal timestamps. Migration `0001_hot_roxanne_simpson.sql` adds the primary key, ownership FK/cascade, required array-shape/value checks, role/experience/time constraints and primary-approach constraint. Existing migrations and Identity rows were preserved. The reviewed migration was also applied successfully to local development PostgreSQL on port 55432.
+- Atomic partial upserts preserve unrelated fields during concurrent first saves. Same-field concurrent updates use last committed replacement. Retries replace equivalent values safely. Backend-derived status and first incomplete step control startup/resume; completion leads only to `DIAGNOSTIC`.
+- Flutter retains local edits during recoverable failures, accepts server updates for unedited fields, disables repeated save taps, advances only after acknowledgment, and isolates profile state across account changes. Back navigation restores selections; completed users can review preferences. Existing theme tokens, safe areas, scrolling and accessible selection indicators are reused.
+- No dependencies or new test cases were added, following the user's explicit instruction overriding the task's new-test sections. Existing route/migration expectations and auth-flow fixtures/assertions were updated for the intentional contract changes. One-off smoke commands remained outside the repository.
+
+| Automated verification | Executed result |
+| --- | --- |
+| Backend static/build | Format check, lint, full TypeScript check, dedicated architecture check (15 checks), and Nest build passed |
+| Existing backend unit/HTTP/config/security suite | 69/69 passed across 14 files, including route inventory and architecture boundaries |
+| Existing PostgreSQL suite | 35/35 passed in a uniquely created disposable database; both migrations applied twice without duplication |
+| Profile HTTP/SQL smoke | Passed seven-step saves/resume, 31-option technology catalog, response fields/cache headers, empty/unknown/duplicate/null/malformed/conflicting values, repeat/reordered updates, concurrent independent fields, account isolation, forged/revoked/unverified access, database PK/FK/value constraints, and logout/login restoration; disposable database removed |
+| Client/server contract | Flutter's real profile model decoded actual API catalog and all eight persisted snapshots, yielding resume indices 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 (Diagnostic Intro) |
+| Migrations/configuration | Drizzle check passed; generation reported no drift; local migration applied successfully; Docker Compose configuration validation passed; API and mobile environment-validation tests passed |
+| Flutter static/regression | Dart formatting reports zero changes; analyzer reports zero issues; 107/107 existing tests passed, including the real Goals screen reached by auth and existing compact light/dark/text-scale checks |
+| Android | `flutter build apk --debug` passed; output `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk` |
+| Hygiene | Final diff whitespace and recognized secret-pattern checks passed; no runtime-secret artifacts or dependency changes added |
+
+Initial local HTTP/PostgreSQL and Flutter cache checks encountered sandbox access restrictions; approved reruns passed. A one-off smoke harness initially omitted required PORT configuration; correcting that harness made the check pass. Vite's existing tsconfig-paths notice and Gradle/JDK native-access warnings were non-blocking.
+
+Verification limits: no new Phase 3 unit/widget test cases were authored by request. Manual/device/visual/keyboard exploratory QA, iOS runtime/build and hosted CI remain separately pending. Diagnostic questions and all Phase 4 behavior remain unimplemented. Phase 3 is development-complete and ready for Phase 4 planning; Phase 4 was not started.
 
 ## Intentionally unimplemented
 
-Engineering profile/preferences onboarding, diagnostic, plans, practice, AI, RevenueCat, OneSignal, analytics, Redis, queues, Terraform/deployment, voice, and placeholder feature modules.
+Diagnostic questions/scoring, plans, practice, AI, RevenueCat, OneSignal, analytics, Redis infrastructure, queues, Terraform/deployment, voice, and placeholder feature modules.

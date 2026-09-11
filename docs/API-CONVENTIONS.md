@@ -76,8 +76,46 @@ No Swagger layer existed in Phase 0; this endpoint contract remains the API docu
 
 ## Complete entry-point inventory
 
-The eight auth routes above plus `GET /api/v1/health` are the nine registered HTTP routes. Health returns 200 `{ "data": { "status": "ok" } }` or 503 `DATABASE_UNAVAILABLE` Problem Details when connectivity fails. Auth 204 responses have no body; there is no new universal envelope. Route registration is checked for duplicates against this inventory.
+The eight auth routes above, three profile routes below, and `GET /api/v1/health` are the twelve registered HTTP routes. Health returns 200 `{ "data": { "status": "ok" } }` or 503 `DATABASE_UNAVAILABLE` Problem Details when connectivity fails. Auth 204 responses have no body; there is no new universal envelope. Route registration is checked for duplicates against this inventory.
 
 No cookies, pagination, filtering, sorting, tenant IDs or broad permission fields are part of these endpoints. DTO transforms/defaults and accepted formats remain unchanged through the architecture migration. No OpenAPI generator is installed; this document is the maintained external contract.
 
 Non-HTTP entry points: `main.ts` boots the configured Nest app; pool shutdown closes connections; Drizzle Kit applies reviewed SQL through existing CLI scripts. There are no workers, scheduled tasks, message/event consumers, externally consumed events or webhooks. SES verification email and the gated local-file inbox are outbound side effects of register/resend, not new listeners. Their runtime configuration, message content and delivery-failure semantics are retained. Update this inventory when a real new entry point is authorized.
+
+## Engineering profile (Phase 3)
+
+All three routes require a Bearer access token and an active verified account with a live session, including catalog reads. Responses use `Cache-Control: no-store`. There is no user ID in the path, query contract, or request body.
+
+| Method/path | Request | Success |
+| --- | --- | --- |
+| GET `/profile/catalog` | No body | 200 `{ "data": { "goals": [...], "role": [...], "experience": [...], "technologies": [...], "focusAreas": [...], "dailyMinutes": [...], "learningPreferences": [...] } }` |
+| GET `/profile` | No body | 200 current preferences, status and next step |
+| PATCH `/profile` | One or more supported preference fields | 200 complete current profile response after atomic replacement of supplied fields |
+
+Each catalog option has `id`, `label`, `enabled`, `order`, nullable `category`, nullable `exclusiveGroup`, and `recommended`. All IDs are strings except daily time IDs, which are integer minutes. `primary_approach` is the shared exclusive group for challenge-first and explain-first; selecting either replaces the other in Flutter. Other learning preferences coexist. At least one learning preference is required; selecting a primary approach is optional. Ten minutes is visually recommended, never silently saved or preselected. No focus-area preselection is introduced.
+
+A new profile returns:
+
+```json
+{
+  "data": {
+    "preferences": {
+      "goals": null,
+      "role": null,
+      "experience": null,
+      "technologies": null,
+      "focusAreas": null,
+      "dailyMinutes": null,
+      "learningPreferences": null
+    },
+    "status": "not_started",
+    "nextStep": "goals"
+  }
+}
+```
+
+For example, `PATCH /profile` with `{ "goals": ["stay_current", "fundamentals"] }` returns those persisted goals and `nextStep: "role"`. Multi-select values replace the whole supplied field and are returned in catalog order. Omitted fields are retained. Null, empty selections, duplicate IDs, unknown/disabled IDs, incompatible preferences, unknown properties and an empty update object are rejected. There is no clear/reset operation in this phase. Daily time accepts only integer 5, 10 or 15; role and experience use catalog string IDs.
+
+`status` is `not_started`, `in_progress`, or `complete`. `nextStep` is the first invalid/missing field in this order: `goals`, `role`, `experience`, `technologies`, `focusAreas`, `dailyMinutes`, `learningPreferences`; otherwise it is `DIAGNOSTIC`. No diagnostic or general-onboarding completion flag is set. Responses omit ownership IDs, database IDs and timestamps.
+
+Validation returns 400 `VALIDATION_ERROR` for DTO failures or 400 `INVALID_PREFERENCES` for domain/update compatibility failures. Authentication uses the existing 401 codes. The mobile client validates the catalog and response shape and checks that progress agrees with saved information; malformed responses offer recovery and cannot advance to Diagnostic Intro. Failed saves retain current selections and can be safely repeated. Same-field concurrent changes use last committed replacement; different-field updates are preserved.

@@ -103,14 +103,14 @@ describe('Auth with real PostgreSQL and HTTP', () => {
     if (created) await admin.query(`DROP DATABASE "${database}"`);
     if (admin) await admin.end();
   });
-  it('applies the reviewed migration once and creates five tables', async () => {
+  it('applies the reviewed migrations once and creates six tables', async () => {
     const rows = await pool.query(
       "SELECT tablename FROM pg_tables WHERE schemaname = 'public'",
     );
-    expect(rows.rows).toHaveLength(5);
+    expect(rows.rows).toHaveLength(6);
     expect(
       (await pool.query('SELECT * FROM drizzle.__drizzle_migrations')).rows,
-    ).toHaveLength(1);
+    ).toHaveLength(2);
   });
   it('registers transactionally with canonical email and Argon2id only', async () => {
     const response = await post('register', {

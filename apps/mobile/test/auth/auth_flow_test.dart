@@ -9,11 +9,12 @@ import 'package:codecore_mobile/features/auth/data/auth_repository.dart';
 import 'package:codecore_mobile/features/auth/domain/auth_state.dart';
 import 'package:codecore_mobile/features/auth/presentation/auth_controller.dart';
 import 'package:codecore_mobile/features/auth/presentation/credentials_screen.dart';
-import 'package:codecore_mobile/features/auth/presentation/profile_boundary_screen.dart';
+import 'package:codecore_mobile/features/auth/presentation/session_recovery_screen.dart';
 import 'package:codecore_mobile/features/auth/presentation/verify_email_screen.dart';
 import 'package:codecore_mobile/features/entry/data/product_intro_store.dart';
 import 'package:codecore_mobile/features/entry/presentation/account_entry_screen.dart';
 import 'package:codecore_mobile/features/entry/presentation/welcome_screen.dart';
+import 'package:codecore_mobile/features/profile/presentation/profile_setup_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,7 +37,23 @@ Future<ProviderContainer> start(
     now: now,
   );
   final authenticated = Dio()
-    ..httpClientAdapter = CallbackAdapter((_) => jsonResponse({}, 204));
+    ..httpClientAdapter = CallbackAdapter((request) {
+      if (request.path == '/profile/catalog') {
+        return jsonResponse({'data': profileCatalogData()});
+      }
+      if (request.path == '/profile') {
+        return jsonResponse({
+          'data': {
+            'preferences': {
+              for (final key in profileCatalogData().keys) key: null,
+            },
+            'status': 'not_started',
+            'nextStep': 'goals',
+          },
+        });
+      }
+      return jsonResponse({}, 204);
+    });
   final container = ProviderContainer(
     overrides: [
       authRepositoryProvider.overrideWithValue(repository),
@@ -180,8 +197,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '123456');
       await tap(tester, 'Verify email');
-      expect(find.byType(ProfileBoundaryScreen), findsOneWidget);
-      expect(find.text('engineer@example.com'), findsOneWidget);
+      expect(find.byType(ProfileSetupScreen), findsOneWidget);
+      expect(find.text('What are you working toward?'), findsOneWidget);
       expect(store.token, 'refresh-1');
       await tap(tester, 'Sign out');
       expect(find.byType(AccountEntryScreen), findsOneWidget);
@@ -227,7 +244,7 @@ void main() {
       expect(find.text('Email or password is incorrect.'), findsOneWidget);
       remote.respond = (_, _) async => sessionData();
       await tap(tester, 'Sign in');
-      expect(find.byType(ProfileBoundaryScreen), findsOneWidget);
+      expect(find.byType(ProfileSetupScreen), findsOneWidget);
     },
   );
   testWidgets('unverified login resumes email verification', (tester) async {
@@ -242,7 +259,7 @@ void main() {
   testWidgets('restored session bypasses first-run intro', (tester) async {
     final store = MemorySessionStore()..token = 'saved';
     await start(tester, store: store, seen: false);
-    expect(find.byType(ProfileBoundaryScreen), findsOneWidget);
+    expect(find.byType(ProfileSetupScreen), findsOneWidget);
   });
   testWidgets('missing session preserves first-run welcome', (tester) async {
     await start(tester, seen: false);
@@ -269,7 +286,7 @@ void main() {
     expect(store.token, 'saved');
     remote.respond = (_, _) async => sessionData();
     await tap(tester, 'Retry');
-    expect(find.byType(ProfileBoundaryScreen), findsOneWidget);
+    expect(find.byType(ProfileSetupScreen), findsOneWidget);
   });
   testWidgets('unauthenticated deep link cannot reach profile boundary', (
     tester,
@@ -299,7 +316,7 @@ void main() {
         expect(tester.takeException(), isNull);
         await tester.enterText(find.byType(TextFormField), '123456');
         await tap(tester, 'Verify email');
-        expect(find.byType(ProfileBoundaryScreen), findsOneWidget);
+        expect(find.byType(ProfileSetupScreen), findsOneWidget);
         expect(tester.takeException(), isNull);
         await tap(tester, 'Sign out');
         container.read(routerProvider).goNamed(AppRoute.login.name);
