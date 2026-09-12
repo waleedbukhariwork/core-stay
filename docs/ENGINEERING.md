@@ -11,6 +11,12 @@
 
 One meaningful responsibility per file. Split when a file grows because it owns multiple jobs, not because of line-count ceremony. Feature constants live with the feature. Global constants exist only when they are actually global.
 
+Backend HTTP adapters use `transport/http/dto/` for request and response definitions, `*-response.mapper.ts` for explicit response construction, and `*-error.mapper.ts` for failure translation. Keep requests separate from response definitions; related classes can share a focused file. Controllers retain routes, actor/input extraction and response-envelope selection. DTO declarations do not provide runtime field filtering; mappers must select public fields explicitly.
+
+Application input/result contracts are plain TypeScript types, colocated with the cohesive service or owning domain when small. Distinguish accepted updates from nullable stored state. Avoid copying structurally identical inputs solely to introduce another layer. Keep persistence and SDK dependencies behind focused ports.
+
+Layer depth follows behavior: Identity coordinates transactions across repositories; Profile authorizes and validates before a single atomic persistence operation; Health invokes its application-owned probe contract directly from its controller. Remove forwarding-only services instead of giving every capability identical scaffolding. This does not permit controllers to import infrastructure or bypass resource authorization. See ADR 0008.
+
 ## Comments
 
 Comments explain non-obvious why. Do not narrate what the code already says.

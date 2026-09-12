@@ -1,10 +1,4 @@
-export class HealthDataDto {
-  status: 'ok';
-}
-
-export class HealthResponseDto {
-  data: HealthDataDto;
-}
+import type { HealthResponseDto } from './dto/health-response.dto.js';
 
 export function toHealthResponse(): HealthResponseDto {
   return {

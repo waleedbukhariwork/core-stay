@@ -12,7 +12,15 @@ export interface ProfilePreferences {
   dailyMinutes: number | null;
   learningPreferences: string[] | null;
 }
-export type ProfileUpdate = Partial<ProfilePreferences>;
+export interface ProfileUpdate {
+  goals?: string[];
+  role?: string;
+  experience?: string;
+  technologies?: string[];
+  focusAreas?: string[];
+  dailyMinutes?: number;
+  learningPreferences?: string[];
+}
 export type ProfileProgress = {
   status: 'not_started' | 'in_progress' | 'complete';
   nextStep: ProfileStep | 'DIAGNOSTIC';

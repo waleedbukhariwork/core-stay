@@ -9,33 +9,10 @@ import {
 } from '@nestjs/common';
 import { ProfileService } from '../../application/profile.service.js';
 import { ProfileGuard, type ProfileRequest } from './profile.guard.js';
-import {
-  UpdateProfileDto,
-  ProfileResponseDto,
-  PreferenceOptionDto,
-} from './profile.dto.js';
-import type {
-  ProfilePreferences,
-  ProfileProgress,
-} from '../../domain/profile.js';
-function response(
-  result: { preferences: ProfilePreferences } & ProfileProgress,
-): ProfileResponseDto {
-  const p = result.preferences;
-  return {
-    preferences: {
-      goals: p.goals,
-      role: p.role,
-      experience: p.experience,
-      technologies: p.technologies,
-      focusAreas: p.focusAreas,
-      dailyMinutes: p.dailyMinutes,
-      learningPreferences: p.learningPreferences,
-    },
-    status: result.status,
-    nextStep: result.nextStep,
-  };
-}
+import { UpdateProfileDto } from './dto/update-profile.dto.js';
+import type { ProfileResponseDto } from './dto/profile-response.dto.js';
+import type { PreferenceCatalogResponseDto } from './dto/preference-catalog-response.dto.js';
+import { mapProfile, mapPreferenceCatalog } from './profile-response.mapper.js';
 @Controller('profile')
 @UseGuards(ProfileGuard)
 export class ProfileController {
@@ -44,23 +21,10 @@ export class ProfileController {
   @Header('Cache-Control', 'no-store')
   async catalog(
     @Req() request: ProfileRequest,
-  ): Promise<{ data: Record<string, PreferenceOptionDto[]> }> {
+  ): Promise<{ data: PreferenceCatalogResponseDto }> {
     const catalog = await this.profiles.catalog(request.principal);
     return {
-      data: Object.fromEntries(
-        Object.entries(catalog).map(([key, options]) => [
-          key,
-          options.map((option) => ({
-            id: option.id,
-            label: option.label,
-            enabled: option.enabled,
-            order: option.order,
-            category: option.category,
-            exclusiveGroup: option.exclusiveGroup,
-            recommended: option.recommended,
-          })),
-        ]),
-      ),
+      data: mapPreferenceCatalog(catalog),
     };
   }
   @Get()
@@ -68,7 +32,7 @@ export class ProfileController {
   async read(
     @Req() request: ProfileRequest,
   ): Promise<{ data: ProfileResponseDto }> {
-    return { data: response(await this.profiles.read(request.principal)) };
+    return { data: mapProfile(await this.profiles.read(request.principal)) };
   }
   @Patch()
   @Header('Cache-Control', 'no-store')
@@ -77,7 +41,7 @@ export class ProfileController {
     @Body() body: UpdateProfileDto,
   ): Promise<{ data: ProfileResponseDto }> {
     return {
-      data: response(await this.profiles.update(request.principal, body)),
+      data: mapProfile(await this.profiles.update(request.principal, body)),
     };
   }
 }

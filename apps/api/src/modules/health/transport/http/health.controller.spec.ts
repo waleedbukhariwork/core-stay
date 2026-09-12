@@ -1,15 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
-import { DatabaseProbe, DatabaseUnavailable } from './database-probe.js';
-import { HealthService } from './health.service.js';
+import {
+  DatabaseProbe,
+  DatabaseUnavailable,
+} from '../../application/database-probe.js';
+import { HealthController } from './health.controller.js';
 
-describe('HealthService', () => {
+describe('HealthController', () => {
   it('checks connectivity through its application port', async () => {
     const databaseHealth = {
       ping: vi.fn().mockResolvedValue(undefined),
     } satisfies DatabaseProbe;
-    const service = new HealthService(databaseHealth);
+    const controller = new HealthController(databaseHealth);
 
-    await expect(service.getHealth()).resolves.toBeUndefined();
+    await expect(controller.getHealth()).resolves.toEqual({
+      data: { status: 'ok' },
+    });
     expect(databaseHealth.ping).toHaveBeenCalledOnce();
   });
 
@@ -18,8 +23,8 @@ describe('HealthService', () => {
     const databaseHealth = {
       ping: vi.fn().mockRejectedValue(failure),
     } satisfies DatabaseProbe;
-    const service = new HealthService(databaseHealth);
+    const controller = new HealthController(databaseHealth);
 
-    await expect(service.getHealth()).rejects.toBe(failure);
+    await expect(controller.getHealth()).rejects.toBe(failure);
   });
 });

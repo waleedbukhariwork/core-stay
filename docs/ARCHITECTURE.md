@@ -1,6 +1,6 @@
 # Architecture
 
-CodeCore is a deployment-independent modular monolith: one NestJS API and one Flutter app. Application code does not assume a specific host; email delivery has an SES infrastructure adapter.
+CodeCore is a capability-first, deployment-independent modular monolith: one NestJS API and one Flutter app. Each backend capability uses lightweight layers proportional to its behavior, with ports for persistence and external integrations. Application code does not assume a specific host; email delivery has an SES infrastructure adapter. See [ADR 0008](adr/0008-lightweight-capability-layers.md) for the layout refinement.
 
 ## Backend ownership
 
@@ -22,7 +22,8 @@ apps/api/src/
     identity/
       identity.module.ts                # providers; exports only IdentityApi
       public/identity.api.ts            # plain actor and deliberate capability
-      transport/http/                   # controllers, guards, DTOs, response/error mapping
+      transport/http/                   # controllers, guards, response/error mappers
+        dto/                            # request classes and explicit response shapes
       application/                      # registration/login, verification, session use cases
         policies/                       # verified actor and resource ownership
         ports/                          # unit of work, focused repositories, clock, token/code/email adapters
@@ -32,23 +33,31 @@ apps/api/src/
         crypto/, email/, config/        # configured adapters; actual system clock
     profile/
       profile.module.ts                 # composes Identity through its public API
-      transport/http/                   # guard, class-validator DTOs, explicit mapping
+      transport/http/                   # controller, guard, response/error mappers
+        dto/                            # update request, profile response, catalog response
       application/                      # profile operations and focused repository port
       domain/                           # authoritative catalog, validation and progress
       infrastructure/persistence/       # atomic partial upsert and profile schema
     health/
       health.module.ts
-      application/                      # probe contract and use case
+      application/                      # probe contract and connectivity failure
       infrastructure/persistence/       # PostgreSQL probe
-      transport/http/                   # explicit response and failure mapping
+      transport/http/                   # controller invokes probe; response/error mappers
+        dto/                            # health response shape
 apps/api/drizzle/                        # established migration path, unchanged
 ```
 
-Health stays small: it has no artificial domain, public facade, or transaction coordinator. There are no placeholder modules, workflows, background jobs, events or internal HTTP services.
+Health stays small: its controller invokes the application-owned `DatabaseProbe` contract directly, and Nest binds that contract to the PostgreSQL adapter. It needs no forwarding service, domain, public facade, or transaction coordinator. There are no placeholder modules, workflows, background jobs, events or internal HTTP services.
 
 ## Dependencies and contracts
 
 Transport invokes application behavior and maps plain results to explicit response DTOs. Application coordinates domain policies and calls ports implemented by infrastructure. Domain imports only its own domain code. Nest DI is allowed in application and infrastructure; HTTP and ORM types are not application contracts. Application services remain cohesive use cases rather than one class per method. A validated scalar input does not need an extra pass-through input class.
+
+Every capability keeps request/response DTOs in `transport/http/dto/`, response mapping in `*-response.mapper.ts`, and failure mapping in `*-error.mapper.ts`. Related DTO classes may share a focused file (as Identity's authentication requests do); request validation and response construction do not share a file. Explicit mappers select public fields: DTO class declarations alone do not filter runtime objects. Controllers handle route metadata, actor/body extraction and invoking those mappers.
+
+Profile demonstrates the full flow: guard authenticates credentials → DTO validates HTTP input → `ProfileService` authorizes the actor, invokes domain validation, and calls `ProfileRepository` → the Drizzle adapter performs the atomic upsert → domain progress is calculated → the response mapper selects public fields. `ProfileResult` is a plain application result, distinct from HTTP DTOs. `ProfileUpdate` permits omitted fields but excludes null values; nullable `ProfilePreferences` represents persisted setup state. Catalog responses enumerate the seven public keys, and response next steps use their explicit string union. A structurally compatible validated DTO can be passed directly to the service without an extra copying layer; application code never imports that DTO.
+
+Use services where authorization, orchestration or transaction ownership requires them. A technical probe may call its application port directly from transport; transport still cannot import an infrastructure adapter. Pure domain functions are sufficient for preference validation/progress. Expose public module APIs only when another capability consumes them, and introduce units of work only for workflows with dependent writes.
 
 Other modules may import only a capability's `public/` contract; module composition may import another module's Nest module. `IdentityApi` does not expose repositories, transaction connections, database rows or private services. Public types are plain and do not re-export private models. Resource policies belong to the resource owner, not a central identity permission service.
 

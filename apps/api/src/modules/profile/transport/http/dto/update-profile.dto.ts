@@ -8,7 +8,7 @@ import {
   IsString,
   ValidateIf,
 } from 'class-validator';
-import { supportedValues } from '../../domain/preference-catalog.js';
+import { supportedValues } from '../../../domain/preference-catalog.js';
 export class UpdateProfileDto {
   @ValidateIf((_object, value) => value !== undefined)
   @IsArray()
@@ -54,26 +54,4 @@ export class UpdateProfileDto {
   @IsString({ each: true })
   @IsIn(supportedValues('learningPreferences'), { each: true })
   learningPreferences?: string[];
-}
-export class ProfileResponseDto {
-  preferences!: {
-    goals: string[] | null;
-    role: string | null;
-    experience: string | null;
-    technologies: string[] | null;
-    focusAreas: string[] | null;
-    dailyMinutes: number | null;
-    learningPreferences: string[] | null;
-  };
-  status!: 'not_started' | 'in_progress' | 'complete';
-  nextStep!: string;
-}
-export class PreferenceOptionDto {
-  id!: string | number;
-  label!: string;
-  enabled!: boolean;
-  order!: number;
-  category!: string | null;
-  exclusiveGroup!: string | null;
-  recommended!: boolean;
 }

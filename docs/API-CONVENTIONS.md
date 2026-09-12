@@ -10,11 +10,11 @@ Explicit response DTOs. Typical envelope:
 { "data": { "status": "ok" } }
 ```
 
-Only fields on the response contract are serialized. Database rows are never returned.
+HTTP response definitions live in each capability's `transport/http/dto/`; sibling `*-response.mapper.ts` functions explicitly construct responses from plain application results. Only selected public fields are serialized. DTO class annotations alone do not strip extra properties. Database rows are never returned.
 
 ## Requests
 
-Class-validator DTO classes. Global pipe:
+Class-validator request DTO classes live in `transport/http/dto/`, separately from response definitions. Application services accept plain input types without importing these HTTP classes. Global pipe:
 
 - `whitelist: true`
 - `forbidNonWhitelisted: true`

@@ -1,14 +1,15 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthResponseDto, toHealthResponse } from './health.dto.js';
-import { HealthService } from '../../application/health.service.js';
+import type { HealthResponseDto } from './dto/health-response.dto.js';
+import { toHealthResponse } from './health-response.mapper.js';
+import { DatabaseProbe } from '../../application/database-probe.js';
 
 @Controller('health')
 export class HealthController {
-  constructor(private readonly healthService: HealthService) {}
+  constructor(private readonly database: DatabaseProbe) {}
 
   @Get()
   async getHealth(): Promise<HealthResponseDto> {
-    await this.healthService.getHealth();
+    await this.database.ping();
     return toHealthResponse();
   }
 }

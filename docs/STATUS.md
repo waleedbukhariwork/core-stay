@@ -101,6 +101,31 @@ Initial local HTTP/PostgreSQL and Flutter cache checks encountered sandbox acces
 
 Verification limits: no new Phase 3 unit/widget test cases were authored by request. Manual/device/visual/keyboard exploratory QA, iOS runtime/build and hosted CI remain separately pending. Diagnostic questions and all Phase 4 behavior remain unimplemented. Phase 3 is development-complete and ready for Phase 4 planning; Phase 4 was not started.
 
+## Backend architecture refinement — complete (2026-09-12)
+
+User-authorized follow-up to the architecture review. Retained the capability-first modular monolith with Identity, Profile, Health and shared technical platform code; refined layer depth and HTTP file conventions as recorded in ADR 0008.
+
+- Profile now has separate update/profile-response/catalog-response DTO files under `transport/http/dto/` and a response mapper. Its controller handles HTTP metadata, actor/body extraction and application invocation. Request decorators, response fields, headers and errors retain their existing behavior.
+- Profile's plain update contract excludes null, while persisted preferences remain nullable. Application results have explicit return types; HTTP catalog keys and next-step values are precisely declared. Its pure validation/progress functions, repository boundary and atomic SQL upsert remain in place.
+- Health invokes the application-owned database probe directly from its controller. Removed the forwarding service, moved its two existing unit checks to the controller, and separated response DTO/mapping. The HTTP failure test now supplies the adapter's actual application failure so it exercises error-mapper wiring.
+- Added 15 retained Profile HTTP regression cases for public response fields, partial-update normalization, catalog metadata, validation failures and denial before persistence. These use Identity/repository doubles to isolate HTTP and application behavior; they do not establish PostgreSQL concurrency or actor provenance. The existing real Identity/PostgreSQL suite was also rerun.
+- Existing architecture rules remain unchanged. Extended the positive fixture to explicitly exercise transport invoking an application port. Updated Architecture, Engineering, API Conventions, the current task and ADR 0008.
+- Reviewed authorization locking and retained user → session locks, process-local actor provenance and existing revocation semantics. Synchronous email/transaction behavior remains a documented operational tradeoff. No dependency, product scope, Flutter wire contract, schema or migration changes.
+
+| Verification | Executed result |
+| --- | --- |
+| API format/lint/typecheck | All passed |
+| Unit/HTTP/architecture suite | 84/84 passed across 15 files, including the 15 new Profile HTTP cases and moved Health checks |
+| Dedicated architecture check | 15/15 passed; no relaxed rules |
+| PostgreSQL integration | 35/35 passed against a uniquely created disposable database, with both migrations applied twice; only the test database was removed |
+| Build | Nest build passed |
+| Migrations | Drizzle check passed; generation reported six tables and no schema changes; no migration applied to the application database |
+| Diff hygiene | `git diff --check` passed; obsolete source imports removed; mobile, migrations, dependency manifests and lockfiles unchanged |
+
+PostgreSQL execution initially encountered sandbox `connect EPERM`; the rerun with local database/socket access passed. HTTP tests also ran with local socket access. The existing Vite tsconfig-paths deprecation notice remains informational.
+
+Verification limits: Flutter format/analyze/tests and Android build were not rerun because mobile code and the shared wire contract were unchanged. Profile database races were not re-tested by the new HTTP cases; their earlier smoke verification is recorded in the Phase 3 checkpoint above. Load testing, live SES, hosted CI and manual/device/iOS verification remain unexecuted in this follow-up. Phase 4 has not started.
+
 ## Intentionally unimplemented
 
 Diagnostic questions/scoring, plans, practice, AI, RevenueCat, OneSignal, analytics, Redis infrastructure, queues, Terraform/deployment, voice, and placeholder feature modules.

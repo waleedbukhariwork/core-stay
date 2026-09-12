@@ -45,9 +45,10 @@ function options(
     ),
   );
 }
-export const PREFERENCE_CATALOG: Readonly<
+export type PreferenceCatalog = Readonly<
   Record<ProfileStep, readonly PreferenceOption[]>
-> = Object.freeze({
+>;
+export const PREFERENCE_CATALOG: PreferenceCatalog = Object.freeze({
   goals: options([
     ['stay_current', 'Stay current in my field'],
     ['fundamentals', 'Strengthen fundamentals'],

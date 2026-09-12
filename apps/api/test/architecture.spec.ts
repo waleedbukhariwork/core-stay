@@ -104,6 +104,9 @@ describe('Architecture boundaries', () => {
       fixture({
         'modules/one/application/use.ts':
           'import { Injectable } from "@nestjs/common"; import "../../two/public/api.js"',
+        'modules/one/transport/http/probe.controller.ts':
+          'import "../../application/probe.js"',
+        'modules/one/application/probe.ts': '',
         'modules/two/public/api.ts': '',
         'modules/one/infrastructure/persistence/x.ts':
           'import { sql } from "drizzle-orm"; import "../../application/use.js"',

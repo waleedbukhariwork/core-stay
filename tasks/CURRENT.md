@@ -1,3 +1,11 @@
+# Backend architecture refinement — 2026-09-12
+
+User-authorized follow-up to Phase 3: implement the agreed capability-first modular monolith with lightweight layers. Standardize HTTP DTO/response-mapper placement, tighten Profile's update/result contracts, remove Health's forwarding service, and update documentation and verification. Preserve current endpoints, runtime validation, Identity authorization/transactions and database schemas. This follow-up explicitly authorizes the structural changes described in ADR 0008; the original Phase 3 restrictions below remain the historical product scope.
+
+Status: complete. API format/lint/typecheck/build, 84 unit/HTTP/architecture tests, the dedicated 15 architecture checks, 35 isolated PostgreSQL tests, and migration validation/drift checks passed. See `docs/STATUS.md` for executed checks and verification limits. Phase 4 remains out of scope.
+
+---
+
 # Phase 3 — Engineering Profile & Preferences
 
 Status: development-complete (2026-09-11). Required automated verification passed; see `docs/STATUS.md`. New test cases were not added per the explicit user instruction; existing suites and one-off code/HTTP/database verification were run. Manual/device QA remains separately pending. Stop at Diagnostic Intro; Phase 4 has not started.

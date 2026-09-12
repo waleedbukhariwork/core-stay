@@ -9,25 +9,38 @@ import {
   profileProgress,
   validateUpdate,
   type ProfileUpdate,
+  type ProfilePreferences,
+  type ProfileProgress,
 } from '../domain/profile.js';
-import { PREFERENCE_CATALOG } from '../domain/preference-catalog.js';
+import {
+  PREFERENCE_CATALOG,
+  type PreferenceCatalog,
+} from '../domain/preference-catalog.js';
+
+export type ProfileResult = {
+  preferences: ProfilePreferences;
+} & ProfileProgress;
+
 @Injectable()
 export class ProfileService {
   constructor(
     private readonly identity: IdentityApi,
     private readonly profiles: ProfileRepository,
   ) {}
-  async catalog(actor: AuthenticatedActor) {
+  async catalog(actor: AuthenticatedActor): Promise<PreferenceCatalog> {
     await this.identity.assertActiveVerified(actor);
     return PREFERENCE_CATALOG;
   }
-  async read(actor: AuthenticatedActor) {
+  async read(actor: AuthenticatedActor): Promise<ProfileResult> {
     await this.identity.assertActiveVerified(actor);
     const preferences =
       (await this.profiles.find(actor.userId)) ?? emptyPreferences();
     return { preferences, ...profileProgress(preferences) };
   }
-  async update(actor: AuthenticatedActor, input: ProfileUpdate) {
+  async update(
+    actor: AuthenticatedActor,
+    input: ProfileUpdate,
+  ): Promise<ProfileResult> {
     await this.identity.assertActiveVerified(actor);
     const preferences = await this.profiles.update(
       actor.userId,
