@@ -4,13 +4,13 @@ import 'package:codecore_mobile/features/auth/presentation/auth_controller.dart'
 import 'package:codecore_mobile/features/auth/presentation/credentials_screen.dart';
 import 'package:codecore_mobile/features/auth/presentation/session_recovery_screen.dart';
 import 'package:codecore_mobile/features/auth/presentation/verify_email_screen.dart';
+import 'package:codecore_mobile/features/diagnostic/presentation/diagnostic_screen.dart';
 import 'package:codecore_mobile/features/entry/application/entry_controller.dart';
 import 'package:codecore_mobile/features/entry/presentation/account_entry_screen.dart';
 import 'package:codecore_mobile/features/entry/presentation/product_intro_screen.dart';
 import 'package:codecore_mobile/features/entry/presentation/splash_screen.dart';
 import 'package:codecore_mobile/features/entry/presentation/welcome_screen.dart';
 import 'package:codecore_mobile/features/health/presentation/health_screen.dart';
-import 'package:codecore_mobile/features/profile/presentation/diagnostic_intro_screen.dart';
 import 'package:codecore_mobile/features/profile/presentation/profile_controller.dart';
 import 'package:codecore_mobile/features/profile/presentation/profile_setup_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -93,7 +93,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoute.diagnostic.path,
         name: AppRoute.diagnostic.name,
-        builder: (context, state) => const DiagnosticIntroScreen(),
+        builder: (context, state) => const DiagnosticScreen(),
       ),
       GoRoute(
         path: AppRoute.recovery.path,

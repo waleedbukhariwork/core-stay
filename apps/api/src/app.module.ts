@@ -1,4 +1,6 @@
 import { ProfileModule } from './modules/profile/profile.module.js';
+import { DiagnosticModule } from './modules/diagnostic/diagnostic.module.js';
+import { mapDiagnosticFailure } from './modules/diagnostic/transport/http/diagnostic-error.mapper.js';
 import { mapProfileFailure } from './modules/profile/transport/http/profile-error.mapper.js';
 import { mapIdentityFailure } from './modules/identity/transport/http/identity-error.mapper.js';
 import { mapHealthFailure } from './modules/health/transport/http/health-error.mapper.js';
@@ -18,11 +20,13 @@ import { HealthModule } from './modules/health/health.module.js';
       mapHealthFailure,
       mapIdentityFailure,
       mapProfileFailure,
+      mapDiagnosticFailure,
     ]),
     DatabaseModule,
     HealthModule,
     IdentityModule,
     ProfileModule,
+    DiagnosticModule,
   ],
 })
 export class AppModule {}

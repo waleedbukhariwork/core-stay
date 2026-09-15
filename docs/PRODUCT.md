@@ -8,4 +8,6 @@ The product loop is:
 
 AI is underlying intelligence inside that loop. It is not the product positioning.
 
-Phase 2 adds account creation, email verification, sign-in and session management after the product introduction. Phase 3 continues into Goals → Role → Experience → Tech Stack → Focus Areas → Daily Time → Learning Preferences. Progress is saved to the authenticated account after each step and resumes from backend state. The authenticated flow now ends at Diagnostic Intro; diagnostic questions, learning, practice and billing remain out of scope.
+Phase 2 adds account creation, email verification, sign-in and session management after the product introduction. Phase 3 continues into Goals → Role → Experience → Tech Stack → Focus Areas → Daily Time → Learning Preferences. Progress is saved to the authenticated account after each step and resumes from backend state.
+
+Phase 4 extends Diagnostic Intro through persisted questions, optional confidence, deterministic answer review and Diagnostic Complete. The engine and UI are implemented; activation is pending the product-approved question catalog and answer keys. No AI-generated content or evaluation is used. Starting Skill Profile, Engineering Health and personalized plans belong to Phase 5; learning, general practice and billing remain outside the current scope.

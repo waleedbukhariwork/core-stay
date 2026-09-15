@@ -118,4 +118,21 @@ For example, `PATCH /profile` with `{ "goals": ["stay_current", "fundamentals"] 
 
 `status` is `not_started`, `in_progress`, or `complete`. `nextStep` is the first invalid/missing field in this order: `goals`, `role`, `experience`, `technologies`, `focusAreas`, `dailyMinutes`, `learningPreferences`; otherwise it is `DIAGNOSTIC`. No diagnostic or general-onboarding completion flag is set. Responses omit ownership IDs, database IDs and timestamps.
 
+## Diagnostic (Phase 4)
+
+All four endpoints require verified active authentication, a live owned Identity session and a complete engineering profile. They use the existing `data` envelope, Problem Details validation/errors and `Cache-Control: no-store`. They never accept user/session ownership IDs. The initial catalog awaits approved content; starting before publication returns 503 `DIAGNOSTIC_UNAVAILABLE` and writes nothing.
+
+| Method/path (under `/api/v1`) | Input | Result |
+| --- | --- | --- |
+| `GET /diagnostic` | None | 200, `data: null` if never started, otherwise current server state |
+| `POST /diagnostic` | None | 200, start or resume; completed diagnostics stay completed |
+| `POST /diagnostic/answers` | `questionId`, `selectedOptionId`, optional integer `responseDurationMs` (0–86,400,000) | 200, saved progress and confidence request or review |
+| `PATCH /diagnostic/confidence` | `questionId`, `confidence`: `guessing`, `somewhat_sure`, `very_sure` | 200, saved progress and trusted review |
+
+State exposes `status` (`active`/`completed`), `diagnosticId`, `version`, ISO `startedAt`/nullable `completedAt`, `progress: { answered, total }`, nullable `question`, nullable `confidence: { question, selectedOptionId }`, and nullable `review`. Questions expose stable `id`, `category`, `interactionType`, public `skill`/`concept` IDs and labels, `prompt`, nullable `context`/`code`, options `{ id, label }` and `confidenceRequested`. Review alone exposes `correct`, `correctOptionId`, `explanation`, `keyIdea`, semantic `confidence`, the answered question and `selectedOptionId`. No raw rows, hidden keys or scoring implementation fields are serialized.
+
+`GET` resumes at the next unanswered question, except that unfinished configured confidence must be recorded first. It returns no historical review. The client shows the review returned by submission, then obtains fresh state to continue; there is no endpoint for merely dismissing a review. The final answer or required confidence write completes the session, and its response still includes the final review.
+
+An identical answer retry returns the original evidence and does not overwrite duration or answered time, even after completion. A different answer to an attempted question returns 409 `DIAGNOSTIC_ANSWER_CONFLICT`. New writes to completed sessions reject with 409 `DIAGNOSTIC_COMPLETED`. Confidence can be updated for the latest answered question while active; exact confidence retries are reads and remain safe after completion. Confidence on unconfigured/unanswered questions rejects with 400 `INVALID_DIAGNOSTIC_CONFIDENCE`. Other failures include 403 `PROFILE_INCOMPLETE`, 409 `DIAGNOSTIC_NOT_STARTED`, 409 `DIAGNOSTIC_QUESTION_OUT_OF_ORDER` and 400 `INVALID_DIAGNOSTIC_ANSWER`; unknown/null/malformed DTO fields retain existing validation errors. Response duration is untrusted client evidence, not an authoritative measure of ability.
+
 Validation returns 400 `VALIDATION_ERROR` for DTO failures or 400 `INVALID_PREFERENCES` for domain/update compatibility failures. Authentication uses the existing 401 codes. The mobile client validates the catalog and response shape and checks that progress agrees with saved information; malformed responses offer recovery and cannot advance to Diagnostic Intro. Failed saves retain current selections and can be safely repeated. Same-field concurrent changes use last committed replacement; different-field updates are preserved.

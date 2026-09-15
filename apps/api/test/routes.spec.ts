@@ -30,9 +30,11 @@ describe('Registered HTTP contract', () => {
       }
       expect(routes.sort()).toEqual([
         'GET /api/v1/auth/me',
+        'GET /api/v1/diagnostic',
         'GET /api/v1/health',
         'GET /api/v1/profile',
         'GET /api/v1/profile/catalog',
+        'PATCH /api/v1/diagnostic/confidence',
         'PATCH /api/v1/profile',
         'POST /api/v1/auth/email-verification/resend',
         'POST /api/v1/auth/email-verification/verify',
@@ -41,6 +43,8 @@ describe('Registered HTTP contract', () => {
         'POST /api/v1/auth/logout-all',
         'POST /api/v1/auth/refresh',
         'POST /api/v1/auth/register',
+        'POST /api/v1/diagnostic',
+        'POST /api/v1/diagnostic/answers',
       ]);
     } finally {
       await app.close();

@@ -126,6 +126,30 @@ PostgreSQL execution initially encountered sandbox `connect EPERM`; the rerun wi
 
 Verification limits: Flutter format/analyze/tests and Android build were not rerun because mobile code and the shared wire contract were unchanged. Profile database races were not re-tested by the new HTTP cases; their earlier smoke verification is recorded in the Phase 3 checkpoint above. Load testing, live SES, hosted CI and manual/device/iOS verification remain unexecuted in this follow-up. Phase 4 has not started.
 
+## Phase 4 engine and UI implemented — approved content pending (2026-09-13)
+
+Phase 4 is **not development-complete**. The supplied scope prohibits AI-generated questions and AI-determined answer keys, and no approved catalog was present in the request or repository. The engine therefore has an unpublished definition registry; start returns recoverable 503 `DIAGNOSTIC_UNAVAILABLE` without creating an empty session. Product-approved questions/options/keys/explanations/key ideas and their stable metadata are required to activate and finish the flow. Phase 5 has not begun and is not ready to consume real diagnostic evidence yet.
+
+- Added the Diagnostic capability using the existing controller/DTO/mapper, application/domain, focused transaction-store and Drizzle boundaries. Added only the consumed `ProfileApi.isComplete` public contract, preserving Profile HTTP behavior and verified actor provenance checks. Architecture rules were not relaxed.
+- Implemented authenticated start/resume, server-derived ordered progress, authoritative single-choice evaluation, optional semantic confidence before review, curated explanation/key-idea review, and atomic completion. Five question categories are supported by the content model; no content was fabricated. Published versions must be retained unchanged for existing sessions.
+- Added `GET /diagnostic`, `POST /diagnostic`, `POST /diagnostic/answers` and `PATCH /diagnostic/confidence` under `/api/v1`, preserving the existing envelope, validation, errors, logging and no-store conventions. Explicit mappers exclude pre-answer truth and persistence fields.
+- Migration `0002_previous_scalphunter.sql` and its Drizzle snapshot add `diagnostic_sessions` and `diagnostic_attempts`, ownership/session FKs with cascade, uniqueness for user/diagnostic and active sessions, one attempt per question, status/time, confidence and duration checks. Raw stable question/skill/concept/difficulty/interaction IDs, selected answer, correctness, duration, confidence and timestamps are retained. Existing migrations/data are unchanged; the migration was exercised in disposable PostgreSQL only and has not been applied to the application database.
+- Session row locks serialize answer/confidence/completion transactions. Concurrent starts use database uniqueness and resume the winner. Identical answer/confidence retries return saved evidence; changed answers conflict; completed sessions cannot reopen. Eligibility is checked before each application operation, with the existing in-flight logout authorization semantics.
+- Flutter now renders start, loading/resume, questions, selection/submission, confidence, review, recovery and completion using an account-scoped Riverpod notifier, repository/service boundary and reusable question/review widgets. The existing diagnostic route loads persisted state before selecting intro/active/completed presentation. Selections survive failed requests; retries and conflict recovery resolve from server state. No local diagnostic storage/index was introduced.
+- No dependencies, new test cases, AI services, mastery/Engineering Health calculations, Starting Skill Profile, plans or future-feature placeholders were added. Existing route inventory and migration-count assertions were updated for the intentional additions. Product scope and API documentation were reconciled; architecture documentation records only the new consumed public contract and actual diagnostic boundaries.
+
+| Automated verification | Executed result |
+| --- | --- |
+| API static/build | Format check, lint, full typecheck and Nest build passed |
+| Architecture | 15/15 existing checks passed, with unchanged enforcement |
+| Existing API suite | 84/84 tests passed across 15 files |
+| Existing PostgreSQL suite | 35/35 tests passed in a unique disposable database; all three migrations applied twice, only that database removed |
+| Migrations | Drizzle check passed; subsequent generation reported eight tables and no schema drift |
+| Flutter | Full Dart format check passed; analysis reported no issues; 107/107 existing tests passed |
+| Android | Debug APK built at `apps/mobile/build/app/outputs/flutter-apk/app-debug.apk` |
+
+Initial HTTP/PostgreSQL and Flutter commands hit sandbox socket/cache restrictions; approved reruns passed. The existing Vite and JDK notices remained non-blocking. The existing regression suites do not establish the new diagnostic endpoint/concurrency behavior; no new tests were authored per request. Full real-content flow verification remains pending the catalog. Manual/device/visual QA, iOS and hosted CI remain separately pending.
+
 ## Intentionally unimplemented
 
-Diagnostic questions/scoring, plans, practice, AI, RevenueCat, OneSignal, analytics, Redis infrastructure, queues, Terraform/deployment, voice, and placeholder feature modules.
+Published diagnostic question content (awaiting approval), final diagnostic/skill scoring, plans, practice, AI, RevenueCat, OneSignal, analytics, Redis infrastructure, queues, Terraform/deployment, voice, and placeholder feature modules.

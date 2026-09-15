@@ -1,708 +1,553 @@
-# Backend architecture refinement — 2026-09-12
-
-User-authorized follow-up to Phase 3: implement the agreed capability-first modular monolith with lightweight layers. Standardize HTTP DTO/response-mapper placement, tighten Profile's update/result contracts, remove Health's forwarding service, and update documentation and verification. Preserve current endpoints, runtime validation, Identity authorization/transactions and database schemas. This follow-up explicitly authorizes the structural changes described in ADR 0008; the original Phase 3 restrictions below remain the historical product scope.
-
-Status: complete. API format/lint/typecheck/build, 84 unit/HTTP/architecture tests, the dedicated 15 architecture checks, 35 isolated PostgreSQL tests, and migration validation/drift checks passed. See `docs/STATUS.md` for executed checks and verification limits. Phase 4 remains out of scope.
-
----
-
-# Phase 3 — Engineering Profile & Preferences
-
-Status: development-complete (2026-09-11). Required automated verification passed; see `docs/STATUS.md`. New test cases were not added per the explicit user instruction; existing suites and one-off code/HTTP/database verification were run. Manual/device QA remains separately pending. Stop at Diagnostic Intro; Phase 4 has not started.
+# Phase 4 — Diagnostic Engine
 
 ## Goal
 
-Implement the authenticated CodeCore engineering-profile and preference setup flow.
+Implement CodeCore's authenticated engineering diagnostic engine.
 
-This phase begins after successful authentication/email verification and ends at the
-Diagnostic Intro boundary.
+This phase begins at the existing Diagnostic Intro screen and ends when the
+diagnostic session is complete.
 
-Follow the existing current architecture of the project consistently for both frontend
-and backend.
+Do not implement the Starting Skill Profile, Engineering Health score, or initial
+personalized plan in this phase.
 
-Preserve existing naming, module boundaries, dependency direction, DTO/serialization,
-repository, error-handling, logging, configuration, state-management, testing, and
-security patterns.
+Follow the existing current architecture of the project consistently for both
+frontend and backend.
 
-Do not introduce a parallel architecture or restructure existing architecture unless
-the requirement genuinely cannot be implemented correctly within it.
+Preserve existing module boundaries, dependency direction, repository patterns,
+DTO/response serialization, validation, logging, configuration, error handling,
+Riverpod state management and security conventions.
 
----
+Do not introduce a parallel architecture or restructure the existing architecture
+unless genuinely required.
 
-## User Flow
-
-Authenticated + verified user
-
-→ Goals
-→ Role
-→ Experience
-→ Tech Stack
-→ Focus Areas
-→ Daily Time
-→ Learning Preferences
-→ Diagnostic Intro
-
-Do NOT implement diagnostic questions in this phase.
+Do not create new test cases unless explicitly requested.
 
 ---
 
-## Core Requirement
+## Flow
 
-Unlike the pre-auth product intro, these are real user preferences.
+Diagnostic Intro
+→ Start Diagnostic
+→ Question
+→ Submit Answer
+→ Confidence when configured
+→ Answer Review
+→ Next Question
+→ Diagnostic Complete
 
-The authoritative state must be associated with the authenticated user and persisted
-to the backend.
+Diagnostic Complete is the Phase 4 terminal boundary.
 
-The client must NOT submit or choose a userId to establish ownership.
-
-Ownership must come from the authenticated server-side principal/session.
-
-A user should be able to:
-
-- leave the flow
-- restart the application
-- sign in again
-- resume from the appropriate incomplete step
-- edit previous selections
-- continue without losing successfully persisted progress
+Phase 5 will build the Starting Skill Profile from diagnostic evidence.
 
 ---
 
-## Goals
+## Product Intent
 
-Question:
+The diagnostic measures engineering understanding and judgment rather than trivia.
 
-"What are you working toward?"
+Initial question categories should support:
 
-Multi-select.
+- Scenario Judgment
+- Predict Outcome
+- Spot the Bug
+- Better Approach
+- Conceptual Reasoning
 
-Initial options:
+The architecture should allow additional interaction types later without rewriting
+the diagnostic session model.
 
-- Stay current in my field
-- Strengthen fundamentals
-- Become a better engineer
-- Prepare for interviews
-- Prepare for a senior role
-- Improve system design
-- Learn a new area
-
-At least one required.
-
-Use stable identifiers internally.
-
-Do not persist display labels as authoritative values.
+Do not implement free-form AI scoring or voice evaluation.
 
 ---
 
-## Role
+## Diagnostic Content
 
-Single-select.
+Diagnostic truth must be deterministic and curated in this phase.
 
-Initial options:
+Do not use AI to determine:
 
-- Backend
-- Frontend
-- Full-stack
-- Mobile
-- DevOps / Platform
-- Data
-- Other
+- the correct answer
+- technical truth
+- diagnostic scoring
 
-Required.
+Use stable identifiers for:
 
-Do not infer seniority from role.
+- question
+- skill
+- concept/subskill
+- difficulty
+- interaction type
 
----
+Do not couple stored attempts to display labels.
 
-## Experience
+The initial question catalog may be code/seed controlled according to the existing
+backend architecture.
 
-Single-select.
-
-Values:
-
-- Less than 1 year
-- 1–3 years
-- 3–5 years
-- 5–8 years
-- 8+ years
-
-Required.
-
-Use stable internal identifiers rather than display strings.
-
-Do not automatically convert these bands into Junior/Mid/Senior labels.
+Do not build a CMS/admin system.
 
 ---
 
-## Tech Stack
+## Question Contract
 
-Searchable multi-select.
+A question available to Flutter should expose only data needed to answer it.
 
-Initial supported technologies should cover at least:
+Conceptually:
 
-Languages:
-- JavaScript
-- TypeScript
-- Python
-- Java
-- Kotlin
-- Dart
-- Go
-- C#
-- C++
-- Rust
+- public question id
+- interaction type
+- skill/concept display information where appropriate
+- difficulty if product UX requires it
+- prompt
+- code/example/context
+- answer options
+- whether confidence is requested
 
-Frontend:
-- React
-- Next.js
-- Angular
-- Vue
-- Flutter
+The pre-answer response must NOT expose:
 
-Backend:
-- Node.js
-- NestJS
-- Express
-- Spring Boot
-- Django
-- FastAPI
-- .NET
+- correct answer
+- scoring metadata
+- internal answer key
+- hidden explanation
+- internal persistence fields
 
-Data:
-- PostgreSQL
-- MySQL
-- MongoDB
-- Redis
-
-Cloud / Platform:
-- AWS
-- Azure
-- GCP
-- Docker
-- Kubernetes
-
-Technology definitions must have stable identifiers.
-
-Do not duplicate the catalog across multiple widgets/files.
-
-At least one technology is required.
-
-The design must allow technologies to evolve later without coupling user records to
-display labels.
+Mobile clients must not be trusted with diagnostic truth.
 
 ---
 
-## Focus Areas
+## Answer Submission
 
-Multi-select.
+Answer evaluation is authoritative on the backend.
 
-Options:
+Flutter submits:
 
-- Debugging
-- API Design
-- Databases
-- Security
-- Concurrency
-- System Design
-- Distributed Systems
-- Testing
-- Git & Collaboration
-- Performance
+- question identifier
+- selected response
+- optional client timing metadata if required
 
-At least one required.
+Do not accept from the client:
 
-Any automatic recommendations/preselection must be deterministic and clearly
-distinguishable from user-selected values.
+- correctness
+- score
+- skill result
+- answer key
 
-No AI is required here.
+Backend determines correctness.
 
----
+After submission return an explicit review contract containing only appropriate data,
+such as:
 
-## Daily Time
+- correct / incorrect
+- correct answer or expected reasoning where appropriate
+- explanation
+- key idea
+- related concept information where useful
 
-Single selection:
-
-- 5 minutes
-- 10 minutes
-- 15 minutes
-
-10 minutes should be visually recommended.
-
-Store the actual semantic value, such as minutes, rather than a UI label.
+Do not return internal scoring implementation details unnecessarily.
 
 ---
 
-## Learning Preferences
+## Confidence
 
-Support:
+Confidence is not required for every question.
 
-- Challenge me first
-- Explain first
-- Real-world examples
-- Visual explanations
-- Deeper technical explanations
+Questions may configure whether confidence is requested.
 
-Model incompatible options deliberately.
+Supported values:
 
-In particular:
+- Guessing
+- Somewhat sure
+- Very sure
 
-"Challenge me first"
-and
-"Explain first"
+Persist the semantic confidence value.
 
-represent competing primary approaches and should not both be active simultaneously.
+Confidence is evidence for future calibration and skill analysis.
 
-Other preferences may coexist.
-
-Test these rules.
+Do not calculate a final confidence score in this phase.
 
 ---
 
-# Backend Persistence
+## Diagnostic Session
 
-Persist the engineering profile/preference state in PostgreSQL.
+Persist diagnostic sessions in PostgreSQL.
 
-Design the persistence model around the information we actually need now.
+A session should support at least:
 
-Do not prematurely create tables for diagnostic, plans, skills or future AI features.
+- authenticated user ownership
+- status
+- started time
+- completion time
+- diagnostic/version identifier
+- current progress derived from persisted attempts
+- attempt history
 
-Requirements:
+Statuses should remain minimal and meaningful, for example:
 
-- user ownership enforced by authenticated identity
-- database constraints where appropriate
-- stable identifiers
-- explicit migrations
-- timestamps where useful
-- update behavior is deterministic
-- repeated equivalent requests are safe
-- partially completed setup can be resumed
+- active
+- completed
 
-Do not return Drizzle/database models directly.
+Add additional states only if genuinely required.
 
-Use existing request DTO, response DTO and response serialization conventions.
+A user must not create uncontrolled duplicate active diagnostic sessions.
 
-Use class-validator for incoming request validation.
-
-Reject unknown/unsupported identifiers.
-
----
-
-# Flexible Preference Catalog
-
-Avoid scattering hard-coded option definitions throughout Flutter and backend.
-
-There should be one authoritative model for supported selectable values.
-
-Prefer a solution consistent with the project's current architecture that gives us:
-
-- stable IDs
-- display labels
-- grouping/category where required
-- enabled/disabled capability
-- predictable ordering
-- room for future additions
-
-Do not build a CMS or administration system in this phase.
-
-Do not introduce unnecessary database complexity merely to avoid every constant.
-
-Use judgment:
-
-stable product concepts may be controlled code constants/enums;
-evolving catalogs such as technologies should have a clean replaceable source.
-
-The Flutter UI must not independently invent identifiers that the server does not
-understand.
+Starting the diagnostic repeatedly should safely return/resume the appropriate
+active session where product behavior requires it.
 
 ---
 
-# Persistence Granularity
+## Attempts
 
-Do not wait until the very last screen to persist everything.
+Persist one authoritative answer attempt per question for the initial diagnostic
+unless the product requirement explicitly allows retries.
 
-Persist valid progress at sensible step boundaries so completed work survives:
+Persist enough raw evidence for Phase 5, including as appropriate:
 
-- app termination
-- logout/login
-- another device
-- network interruption after earlier completed steps
+- question
+- answer
+- correctness
+- response duration
+- confidence
+- answered time
 
-However, do not create seven inconsistent APIs solely because there are seven screens.
+Do not calculate or persist speculative final mastery/Engineering Health values yet.
 
-Use a cohesive profile/preferences contract consistent with the existing API style.
-
-Updates must be safe to repeat.
-
----
-
-# Profile Setup State
-
-The backend must be able to determine whether profile setup is:
-
-- not started
-- in progress
-- complete
-
-Do not rely solely on a client boolean.
-
-Completion must be derived from or validated against required persisted information.
-
-After completion, the server/client must know that the next product stage is:
-
-DIAGNOSTIC
-
-Do not mark diagnostic complete.
-
-Do not mark general onboarding complete.
+Database constraints should protect relevant uniqueness and ownership invariants.
 
 ---
 
-# Bootstrap / Resume
+## Resume
 
-Integrate the profile state into the existing authenticated startup/bootstrap flow.
+The backend is authoritative.
 
-Expected behavior:
+If the application closes during an active diagnostic:
 
-Authenticated user with no preferences
-→ Goals
+authenticated user
+→ profile already complete
+→ active diagnostic exists
+→ resume at the next unanswered question
 
-Goals complete but required role missing
-→ Role
+Do not trust a locally stored question index as authoritative.
 
-Role complete but experience missing
-→ Experience
+Flutter may preserve presentation state in memory, but server state determines
+diagnostic progress.
 
-Continue according to actual valid persisted state.
-
-Completed preferences
-→ Diagnostic Intro
-
-Do not blindly trust a stored "current page".
-
-Derive the next valid step from server state.
-
-A malformed/inconsistent response must fail safely.
+A completed diagnostic must not reopen as active.
 
 ---
 
-# Offline / Network Behavior
+## Question Ordering
 
-The backend remains authoritative.
+The initial diagnostic must have deterministic ordering.
 
-Flutter should preserve already-loaded in-memory state during transient failures.
+Do not introduce AI-driven adaptive question selection yet.
 
-Do not silently claim unsaved changes were persisted.
+A versioned diagnostic definition is preferred so future question-set changes do not
+silently alter an in-progress diagnostic.
 
-If saving a step fails:
+Existing sessions should remain tied to the diagnostic definition/version they began with.
 
-- keep user's current selections
-- show a recoverable error
-- allow retry
-- avoid duplicated updates
-
-Network failure must not cause logout.
-
-Do not add a local database or complex offline sync engine.
+Keep implementation proportional; do not build a generalized assessment platform.
 
 ---
 
-# Flutter UX
+## Backend Ownership
 
-Reuse the existing design system and established patterns.
+Add diagnostic capability following the project's existing capability-first modular
+monolith architecture.
 
-Requirements:
+Use the existing layering and module conventions already established in the project.
 
-- polished professional visual quality
-- Light / Dark / System themes
-- responsive layouts
-- safe areas
-- scrolling where needed
-- accessible controls
-- clear selected/unselected states
-- selected state not represented by color alone
-- appropriate loading/saving states
-- no blocking full-screen spinner for every tiny interaction unless necessary
+Do not re-document or redesign the architecture inside this phase.
 
-Tech Stack search must be responsive and usable with the keyboard open.
+All diagnostic read/write endpoints require authenticated and verified users who have
+completed the engineering-profile setup.
 
-Do not use fixed screenshot-specific dimensions.
+User ownership comes from authenticated identity.
+
+Do not accept arbitrary userId ownership from request payloads.
 
 ---
 
-# Navigation
+## API
 
-Use existing routing patterns.
+Use the existing API conventions.
 
-Requirements:
+The capability should support the equivalent of:
 
-- forward navigation
-- back navigation
-- previous values remain selected
-- resume from backend state
-- repeated CTA taps do not duplicate saves/navigation
-- Diagnostic Intro is the terminal Phase 3 destination
+- start/resume diagnostic
+- get current question/session progress
+- submit answer
+- submit/update confidence where required
+- continue to next question
+- obtain diagnostic completion state
 
-Do not implement Diagnostic Questions.
+Exact endpoint shape should follow existing project conventions.
+
+Avoid one endpoint per UI button if a more cohesive API contract is appropriate.
+
+Use:
+
+- request DTOs
+- class-validator
+- response DTOs
+- response mappers
+- existing error contract
+
+Do not expose Drizzle rows directly.
 
 ---
 
-# Validation
-
-Validation must exist at the appropriate boundaries.
-
-Frontend validation improves UX.
+## Validation
 
 Backend validation is authoritative.
 
-Never rely on Flutter validation for security/integrity.
+Reject:
 
-Test:
-
-- empty required selections
-- unsupported identifiers
-- duplicate identifiers
-- conflicting learning preferences
-- invalid daily time
-- invalid role/experience
+- unknown question identifiers
+- answers not valid for the question
+- duplicate submissions where not allowed
+- answering questions outside the user's session
+- answering already-completed sessions
+- invalid confidence values
 - malformed payloads
+- unauthorized access
+
+Flutter validation exists for UX only.
 
 ---
 
-# Response Data
+## Concurrency / Idempotency
 
-Return only the information Flutter actually needs.
+Protect against:
 
-Do not expose:
+- double answer submission
+- repeated CTA taps
+- two requests answering the same question concurrently
+- accidental duplicate session creation
 
-- internal database IDs unnecessarily
-- persistence metadata not needed by clients
-- internal timestamps without a product reason
-- Drizzle rows
-- unrelated user/auth data
+Database constraints and transactions should enforce important invariants.
 
-Use stable public identifiers.
+Do not rely only on UI button disabling.
 
----
-
-# Concurrency / Updates
-
-Preference updates should be deterministic and safe to retry.
-
-Avoid:
-
-- duplicate join-table records
-- lost data from naive append behavior
-- partial multi-table updates
-
-Use transactions where one logical update spans multiple dependent writes.
-
-Database constraints should enforce uniqueness where appropriate.
+Equivalent repeated operations should have deliberate behavior.
 
 ---
 
-# Security / Privacy
+## Flutter
 
-Engineering preferences are user data.
+Extend the existing diagnostic feature using the project's established Flutter
+architecture.
 
-Do not log the entire preference profile in routine request logs.
+Use the existing Riverpod/state-management patterns.
 
-Do not include preference payloads in errors.
+Required UI states:
 
-All mutation/read endpoints require authentication.
+- loading/resuming diagnostic
+- active question
+- selected answer
+- submitting
+- answer review
+- recoverable failure
+- completed
 
-A user must never be able to read or modify another user's preferences by changing a
-request parameter.
+Do not create a second competing source of truth.
 
-Do not accept user ownership from request body/query/path where it is unnecessary.
-
----
-
-# Tests — Backend
-
-Add meaningful automated coverage for:
-
-- create/update profile preferences
-- authenticated ownership
-- unauthenticated access denied
-- stable identifier validation
-- invalid identifiers
-- duplicate values
-- learning preference conflicts
-- daily-time validation
-- partial progress
-- completion determination
-- safe repeated updates
-- transaction behavior where applicable
-- DB uniqueness/constraints
-- response serialization
-- other users' data inaccessible
-- resume/next-step calculation
-
-Use PostgreSQL integration tests where persistence guarantees matter.
+Presentation must not call Dio directly.
 
 ---
 
-# Tests — Flutter
+## Question UI
 
-Automated tests should cover:
+Create clean reusable rendering for the supported question interactions.
 
-- Goals multi-select
-- Role single-select
-- Experience selection
-- Tech Stack search/filter/select
-- Focus Areas
-- Daily Time
-- Learning Preference compatibility rules
-- required CTA states
-- backend loading
-- save success
-- save failure + retry
-- selections retained after save failure
-- previous values restored from server
-- back navigation
-- resume from each meaningful incomplete stage
-- completed profile → Diagnostic Intro
-- repeated CTA protection
-- Light theme
-- Dark theme
-- compact layout
+Avoid one enormous diagnostic screen with all logic embedded in it.
+
+However, do not build a plugin framework or excessive generic abstraction.
+
+Code snippets must use the existing design system and be readable in Light and Dark mode.
+
+Support:
+
+- responsive layout
+- safe areas
+- scrolling
 - increased text scaling
-- keyboard/search layout where relevant
+- long question/answer content
 
-Use existing testing patterns.
-
-Do not add tests solely to increase coverage percentage.
+Do not use screenshot-specific dimensions.
 
 ---
 
-# Dependencies
+## Answer Review
 
-Do not add a package if existing project capabilities can solve the requirement cleanly.
+After submission show a useful engineering review.
 
-In particular, do not add:
+At minimum where applicable:
 
-- local database
-- state-management alternative
-- service locator
-- responsive framework
-- form framework
-- search package
-- UI kit
-- analytics
-- AI library
+- result
+- explanation
+- key idea
 
-without an actual demonstrated requirement.
+The goal is learning, not merely displaying "Correct" or "Incorrect".
+
+Keep review content deterministic from trusted diagnostic content.
+
+Do not call AI in this phase.
 
 ---
 
-# Out of Scope
+## Network Failure
+
+If answer submission fails because of a transient network issue:
+
+- keep the selected answer visible
+- do not falsely show it as submitted
+- allow retry
+- prevent duplicate attempts
+
+Network failure must not cause logout.
+
+If the server confirms the answer but the client loses the response, retry/recovery
+must resolve safely from server state.
+
+---
+
+## Logging / Privacy
+
+Do not log complete diagnostic answers in routine request logs.
+
+Do not log question answer keys.
+
+Log operational failures using existing structured logging conventions.
+
+Diagnostic responses are user data.
+
+---
+
+## Out of Scope
 
 Do NOT implement:
 
-- diagnostic questions
-- diagnostic scoring
-- confidence scoring
-- skill profile
-- Engineering Health
-- plan generation
-- Today screen
-- learning content
-- practice sessions
-- AI personalization
+- Starting Skill Profile
+- Engineering Health calculation
+- mastery scoring
+- retention/decay
+- personalized plan
+- Today
+- Learn feature
+- general Practice feature
+- AI-generated questions
+- AI answer evaluation
+- free-form reasoning evaluation
+- voice
 - RevenueCat
 - OneSignal
-- voice
-- analytics
-- social login
-- password reset
+- analytics platform
 
-Do not create fake implementations for future phases.
+Do not create fake placeholders for future phases.
 
 ---
 
-# Automated Verification
+## Dependencies
 
-Follow the repository verification policy.
+Prefer existing project capabilities.
+
+Do not add a dependency unless Phase 4 genuinely requires it.
+
+Do not add:
+
+- alternate state management
+- assessment framework
+- local database
+- AI SDK
+- analytics SDK
+- responsive UI framework
+- unnecessary utility libraries
+
+---
+
+## Verification
+
+Do not create new unit, widget, integration or E2E test cases unless explicitly requested.
+
+Run the project's existing verification needed to ensure the implementation remains healthy.
 
 Backend:
-- formatting
+- format
 - lint
 - typecheck
-- unit tests
-- integration tests
+- existing tests
 - build
 - migration validation
 
 Flutter:
 - dart format
 - flutter analyze
-- flutter test
+- existing tests
 - Android debug build
 
-Manual/device QA is NOT required unless explicitly requested separately.
-
-Report manual QA as pending.
-
----
-
-# Documentation
-
-Update docs/STATUS.md after successful implementation.
-
-Update other durable documentation only if a real contract or architecture decision changed.
-
-Do not duplicate current architecture documentation inside the task completion report.
+Manual/device testing is handled separately by the product owner unless explicitly
+requested.
 
 ---
 
-# Completion Criteria
+## Completion Criteria
 
-Phase 3 is development-complete when:
+Phase 4 is development-complete when:
 
-1. Only authenticated/verified users can access profile setup.
-2. Goals persist correctly.
-3. Role persists correctly.
-4. Experience persists correctly.
-5. Tech Stack persists correctly.
-6. Focus Areas persist correctly.
-7. Daily Time persists correctly.
-8. Learning Preferences persist correctly.
-9. Backend is authoritative.
-10. Profile progress survives application restart.
-11. Progress survives logout/login.
-12. Resume goes to the first logically incomplete step.
-13. Unsupported data is rejected server-side.
-14. Ownership cannot be spoofed from the client.
-15. Repeated updates are safe.
-16. Required DB constraints exist.
-17. API responses expose only intended data.
-18. Flutter remains responsive and theme-compatible.
-19. Diagnostic Intro is reached after profile completion.
-20. Diagnostic questions are not implemented.
-21. Backend automated checks pass.
-22. Flutter automated checks pass.
-23. Android debug build passes.
-24. No unrelated dependency/architecture changes were introduced.
+1. Eligible authenticated user can start a real diagnostic session.
+2. Duplicate active sessions are prevented/resumed safely.
+3. Questions have stable IDs/types/skill metadata.
+4. Correct answers are not exposed before submission.
+5. Backend is authoritative for answer evaluation.
+6. User can submit an answer.
+7. Optional confidence is persisted correctly.
+8. Answer review displays trusted explanation/key idea.
+9. Attempts persist in PostgreSQL.
+10. Raw diagnostic evidence required for Phase 5 is retained.
+11. User can progress through the diagnostic.
+12. Application restart can resume the active diagnostic.
+13. Duplicate answer submissions are safe.
+14. Another user's diagnostic cannot be accessed or modified.
+15. Completed diagnostic reaches the Phase 5 boundary.
+16. No Starting Skill Profile is calculated yet.
+17. No AI dependency is introduced.
+18. Existing backend verification passes.
+19. Existing Flutter verification passes.
+20. Android debug build succeeds.
+21. Existing project architecture remains consistent.
 
 Manual QA remains separately pending.
 
 ---
 
-# Completion Report
+## Documentation
 
-Keep the final report concise.
+Update docs/STATUS.md after successful implementation.
 
-Report only:
+Change architecture documentation only if an actual durable architecture decision changed.
 
-1. implemented flow
+---
+
+## Completion Report
+
+Keep the report concise.
+
+Report:
+
+1. implemented diagnostic flow
 2. database/migrations added
-3. API contracts added
-4. important behavior decisions
-5. dependencies added, if any
-6. backend automated verification results
-7. Flutter automated verification results
-8. deviations from task and why
-9. manual QA pending
-10. readiness for Phase 4
+3. question/content model
+4. API contracts added
+5. important concurrency/security decisions
+6. dependencies added, if any
+7. backend verification results
+8. Flutter verification results
+9. deviations and why
+10. manual QA pending
+11. readiness for Phase 5
 
-Do not begin Phase 4 automatically.
+Do not begin Phase 5 automatically.
+
+## Implementation checkpoint — 2026-09-13
+
+Engine, persistence/migration, HTTP contracts and Flutter flow are implemented. Phase 4 remains incomplete pending the approved diagnostic catalog: questions, options, answer keys, explanations/key ideas and stable metadata. No approved content was supplied or found; start safely reports unavailable until the registry is populated. No AI-generated questions or new test cases were introduced. Existing automated verification and its coverage limits are recorded in `docs/STATUS.md`; manual QA remains separately pending. Phase 5 has not started.

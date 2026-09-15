@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ProfileApi } from '../public/profile.api.js';
 import {
   IdentityApi,
   type AuthenticatedActor,
@@ -22,11 +23,16 @@ export type ProfileResult = {
 } & ProfileProgress;
 
 @Injectable()
-export class ProfileService {
+export class ProfileService extends ProfileApi {
   constructor(
     private readonly identity: IdentityApi,
     private readonly profiles: ProfileRepository,
-  ) {}
+  ) {
+    super();
+  }
+  async isComplete(actor: AuthenticatedActor): Promise<boolean> {
+    return (await this.read(actor)).status === 'complete';
+  }
   async catalog(actor: AuthenticatedActor): Promise<PreferenceCatalog> {
     await this.identity.assertActiveVerified(actor);
     return PREFERENCE_CATALOG;

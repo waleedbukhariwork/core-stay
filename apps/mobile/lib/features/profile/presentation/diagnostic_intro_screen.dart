@@ -1,5 +1,6 @@
 import 'package:codecore_mobile/app/theme/app_spacing.dart';
 import 'package:codecore_mobile/features/auth/presentation/auth_controller.dart';
+import 'package:codecore_mobile/features/diagnostic/presentation/diagnostic_controller.dart';
 import 'package:codecore_mobile/features/entry/presentation/widgets/entry_layout.dart';
 import 'package:codecore_mobile/features/profile/presentation/profile_controller.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ class DiagnosticIntroScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final auth = ref.watch(authControllerProvider);
+    final diagnostic = ref.watch(diagnosticControllerProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Your next step')),
       body: SafeArea(
@@ -30,15 +32,33 @@ class DiagnosticIntroScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             const Text(
               'Next comes a diagnostic to explore what you know '
-              'and where you can grow. The diagnostic is coming next.',
+              'and where you can grow. Choose an answer, reflect on your '
+              'confidence when asked, and explore the reasoning. '
+              'Your progress is saved as you go.',
             ),
             const SizedBox(height: AppSpacing.xl),
+            FilledButton(
+              onPressed: diagnostic.busy
+                  ? null
+                  : ref.read(diagnosticControllerProvider.notifier).start,
+              child: Text(diagnostic.busy ? 'Starting…' : 'Start diagnostic'),
+            ),
+            if (diagnostic.error != null)
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  diagnostic.error!,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
             OutlinedButton(
-              onPressed: ref.read(profileControllerProvider.notifier).edit,
+              onPressed: diagnostic.busy
+                  ? null
+                  : ref.read(profileControllerProvider.notifier).edit,
               child: const Text('Review my preferences'),
             ),
             TextButton(
-              onPressed: auth.busy
+              onPressed: auth.busy || diagnostic.busy
                   ? null
                   : ref.read(authControllerProvider.notifier).logout,
               child: const Text('Sign out'),

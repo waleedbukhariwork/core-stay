@@ -15,6 +15,13 @@
       "when": 1789101531351,
       "tag": "0001_hot_roxanne_simpson",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789288140135,
+      "tag": "0002_previous_scalphunter",
+      "breakpoints": true
     }
   ]
 }
