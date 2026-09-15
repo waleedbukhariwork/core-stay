@@ -120,7 +120,7 @@ For example, `PATCH /profile` with `{ "goals": ["stay_current", "fundamentals"] 
 
 ## Diagnostic (Phase 4)
 
-All four endpoints require verified active authentication, a live owned Identity session and a complete engineering profile. They use the existing `data` envelope, Problem Details validation/errors and `Cache-Control: no-store`. They never accept user/session ownership IDs. The initial catalog awaits approved content; starting before publication returns 503 `DIAGNOSTIC_UNAVAILABLE` and writes nothing.
+All four endpoints require verified active authentication, a live owned Identity session and a complete engineering profile. They use the existing `data` envelope, Problem Details validation/errors and `Cache-Control: no-store`. They never accept user/session ownership IDs. The published `engineering-baseline-v1` catalog contains eight ordered questions; eligible users start or resume that immutable version through the existing contract.
 
 | Method/path (under `/api/v1`) | Input | Result |
 | --- | --- | --- |
